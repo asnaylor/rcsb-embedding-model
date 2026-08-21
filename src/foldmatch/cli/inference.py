@@ -72,6 +72,14 @@ def residue_embedding(
         strategy: Annotated[Strategy, typer.Option(
             help='Lightning strategy to control distribution of inference.'
         )] = Strategy.auto,
+        nvtx: Annotated[bool, typer.Option(
+            "--nvtx",
+            help='Add NVTX ranges around ESM encode and forward stages for Nsight profiling.'
+        )] = False,
+        profile_memory: Annotated[bool, typer.Option(
+            "--profile-memory",
+            help='Log synchronized per-stage PyTorch CUDA allocator peaks.'
+        )] = False,
         log_level: Annotated[LogLevel, typer.Option(
             help='Logging level.'
         )] = LogLevel.info
@@ -94,6 +102,8 @@ def residue_embedding(
         out_folder=output_folder,
         strategy=strategy,
         return_predictions=False,
+        nvtx=nvtx,
+        profile_memory=profile_memory,
     )
 
 
@@ -217,6 +227,14 @@ def chain_embedding(
         strategy: Annotated[Strategy, typer.Option(
             help='Lightning strategy to control distribution of inference.'
         )] = Strategy.auto,
+        nvtx: Annotated[bool, typer.Option(
+            "--nvtx",
+            help='Add an NVTX range around each chain aggregator batch.'
+        )] = False,
+        profile_memory: Annotated[bool, typer.Option(
+            "--profile-memory",
+            help='Log synchronized per-stage PyTorch CUDA allocator peaks.'
+        )] = False,
         log_level: Annotated[LogLevel, typer.Option(
             help='Logging level.'
         )] = LogLevel.info
@@ -253,6 +271,8 @@ def chain_embedding(
         strategy=strategy,
         res_embedding_format=res_embedding_format,
         return_predictions=False,
+        nvtx=nvtx,
+        profile_memory=profile_memory,
     )
 
 @app.command(
@@ -317,6 +337,14 @@ def assembly_embedding(
         strategy: Annotated[Strategy, typer.Option(
             help='Lightning strategy to control distribution of inference.'
         )] = Strategy.auto,
+        nvtx: Annotated[bool, typer.Option(
+            "--nvtx",
+            help='Add an NVTX range around each assembly aggregator batch.'
+        )] = False,
+        profile_memory: Annotated[bool, typer.Option(
+            "--profile-memory",
+            help='Log synchronized per-stage PyTorch CUDA allocator peaks.'
+        )] = False,
         log_level: Annotated[LogLevel, typer.Option(
             help='Logging level.'
         )] = LogLevel.info
@@ -343,6 +371,8 @@ def assembly_embedding(
         strategy=strategy,
         res_embedding_format=res_embedding_format,
         return_predictions=False,
+        nvtx=nvtx,
+        profile_memory=profile_memory,
     )
 
 @app.command(
@@ -432,6 +462,14 @@ def complete_embedding(
         strategy: Annotated[Strategy, typer.Option(
             help='Lightning strategy to control distribution of inference.'
         )] = Strategy.auto,
+        nvtx: Annotated[bool, typer.Option(
+            "--nvtx",
+            help='Add NVTX ranges around ESM and aggregator stages for Nsight profiling.'
+        )] = False,
+        profile_memory: Annotated[bool, typer.Option(
+            "--profile-memory",
+            help='Log synchronized per-stage PyTorch CUDA allocator peaks.'
+        )] = False,
         log_level: Annotated[LogLevel, typer.Option(
             help='Logging level.'
         )] = LogLevel.info
@@ -463,6 +501,8 @@ def complete_embedding(
         accelerator=accelerator,
         devices=devices,
         strategy=strategy,
+        nvtx=nvtx,
+        profile_memory=profile_memory,
         log_level=log_level
     )
     chain_embedding(
@@ -477,6 +517,8 @@ def complete_embedding(
         accelerator=accelerator,
         devices=devices,
         strategy=strategy,
+        nvtx=nvtx,
+        profile_memory=profile_memory,
         log_level=log_level
     )
     assembly_embedding(
@@ -494,6 +536,8 @@ def complete_embedding(
         accelerator=accelerator,
         devices=devices,
         strategy=strategy,
+        nvtx=nvtx,
+        profile_memory=profile_memory,
         log_level=log_level
     )
 

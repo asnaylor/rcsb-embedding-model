@@ -41,6 +41,9 @@ def predict(
         res_embedding_format: ResEmbeddingFormat = ResEmbeddingFormat.pt,
         *,
         return_predictions: bool = True,
+        nvtx: bool = False,
+        profile_memory: bool = False,
+        profile_stage: str = "chain",
 ):
     logger = logging.getLogger(__name__)
 
@@ -93,7 +96,10 @@ def predict(
         device=torch.device("cpu")
     )
     module = ChainModule(
-        model=aggregator_model
+        model=aggregator_model,
+        nvtx=nvtx,
+        profile_memory=profile_memory,
+        profile_stage=profile_stage,
     )
     logger.info(f"rcsb-aggregator module ready")
 

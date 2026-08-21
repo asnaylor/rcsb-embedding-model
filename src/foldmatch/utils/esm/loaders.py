@@ -251,15 +251,25 @@ def geometric_attention_off(model, off=True):
                 block.use_geom_attn = True
 
 
-def per_residue_embedding(model, esm_prot):
+def per_residue_embedding(model, esm_prot, *, nvtx=False, profile_memory=False, profile_label="", logger=None):
     """ESM3 per-residue embedding of one protein, (L + 2, 1536) with BOS and EOS.
 
     Sequence-only proteins (no coordinates) run without geometric attention; proteins with
     coordinates take ESM3's path unchanged. Every call holds the model's lock, so calls on one
     model from several threads run one at a time (calls on different models do not wait).
+
+    ``nvtx`` and ``profile_memory`` opt in to CUDA profiling of the ``esm.encode`` and
+    ``esm.forward_and_sample`` stages separately (:func:`foldmatch.utils.profiling.cuda_profile_stage`),
+    each range named with ``profile_label``.
     """
     from esm.sdk.api import SamplingConfig
+    sampling = SamplingConfig(return_per_residue_embeddings=True)
     with geometric_attention_off(model, off=esm_prot.coordinates is None):
-        return model.forward_and_sample(
-            model.encode(esm_prot), SamplingConfig(return_per_residue_embeddings=True)
-        ).per_residue_embedding
+        if not (nvtx or profile_memory):
+            return model.forward_and_sample(model.encode(esm_prot), sampling).per_residue_embedding
+        from foldmatch.utils.profiling import cuda_profile_stage
+        suffix = f" {profile_label}" if profile_label else ""
+        with cuda_profile_stage(f"esm.encode{suffix}", nvtx=nvtx, memory=profile_memory, logger=logger):
+            encoded = model.encode(esm_prot)
+        with cuda_profile_stage(f"esm.forward_and_sample{suffix}", nvtx=nvtx, memory=profile_memory, logger=logger):
+            return model.forward_and_sample(encoded, sampling).per_residue_embedding

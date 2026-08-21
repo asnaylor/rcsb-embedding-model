@@ -32,6 +32,8 @@ def predict(
         out_folder: Path = None,
         res_embedding_format: ResEmbeddingFormat = ResEmbeddingFormat.pt,
         return_predictions: bool = True,
+        nvtx: bool = False,
+        profile_memory: bool = False,
 ):
     logger = logging.getLogger(__name__)
 
@@ -87,4 +89,7 @@ def predict(
         inference_set=inference_set,
         res_embedding_format=res_embedding_format,
         return_predictions=return_predictions,
+        nvtx=nvtx,
+        profile_memory=profile_memory,
+        profile_stage="assembly",
     )

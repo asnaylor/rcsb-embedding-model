@@ -329,6 +329,31 @@ Supported `--format-output` fields:
 - Compositional bias correction: off by default, so alignments are scored with plain BLOSUM62. `--comp-bias-corr` (scaled by `--comp-bias-corr-scale`, default `1`) applies mmseqs's correction for locally biased amino-acid composition, which mmseqs enables by default; use it when comparing with `mmseqs search`. With the same setting on both tools, raw scores, bit scores and E-values match `mmseqs search` (18-8cc5c) on the same pairs, except for alignments containing a non-standard residue (`X`, `B`, `Z`, `J`, `U`, `O`, `*`), which the two tools score differently. The correction can shorten alignments over biased regions, so coordinates, identity and coverage change too.
 - `evalue`/`bits` use calibrated Karlin–Altschul statistics by default (`--significance-mode default`). `--significance-mode sampled` estimates λ/K by sampling for other gap penalties, but its absolute magnitudes are relative-only. The significance pass is skipped automatically when neither `evalue` nor `bits` is in `--format-output`.
 
+### `inference` — low-level inference subcommands
+
+Lower-level entry point exposing individual inference passes (`residue-embedding`, `structure-embedding`, `chain-embedding`, `assembly-embedding`, `complete-embedding`). Mostly useful for advanced workflows that compose inference stages explicitly. Run `inference --help` for the command list.
+
+#### CUDA memory profiling
+
+The residue, chain, assembly, and complete inference commands accept two opt-in
+profiling switches:
+
+- `--nvtx` adds ranges for ESM encode/forward and aggregator batches so they are
+  visible in NVIDIA Nsight Systems.
+- `--profile-memory` logs the PyTorch CUDA allocator's allocated, reserved, and
+  peak memory for each range. It synchronizes CUDA at stage boundaries and is
+  intended for diagnosis rather than production throughput measurements.
+
+```bash
+nsys profile --trace=cuda,nvtx --cuda-memory-usage=true \
+    -o foldmatch-profile \
+    inference complete-embedding <other-options> --nvtx --profile-memory
+```
+
+Memory log entries include the input-resident baseline and the additional peak
+within each stage. When profiling is requested without a CUDA device, Foldmatch
+warns and continues without CUDA profiling.
+
 ---
 
 ## Python API
