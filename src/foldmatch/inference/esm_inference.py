@@ -31,6 +31,8 @@ def predict(
         out_name: str = 'inference',
         out_folder: Path = None,
         return_predictions: bool = True,
+        nvtx: bool = False,
+        profile_memory: bool = False,
 ):
     logger = logging.getLogger(__name__)
 
@@ -61,7 +63,9 @@ def predict(
         device=torch.device("cpu")
     )
     module = EsmModule(
-        model=esm_model
+        model=esm_model,
+        nvtx=nvtx,
+        profile_memory=profile_memory,
     )
     logger.info(f"rcsb-esm module ready")
 

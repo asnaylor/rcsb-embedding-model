@@ -199,6 +199,27 @@ Supported `--format-output` fields:
 
 Lower-level entry point exposing individual inference passes (`residue-embedding`, `structure-embedding`, `chain-embedding`, `assembly-embedding`, `complete-embedding`). Mostly useful for advanced workflows that compose inference stages explicitly. Run `inference --help` for the command list.
 
+#### CUDA memory profiling
+
+The residue, chain, assembly, and complete inference commands accept two opt-in
+profiling switches:
+
+- `--nvtx` adds ranges for ESM encode/forward and aggregator batches so they are
+  visible in NVIDIA Nsight Systems.
+- `--profile-memory` logs the PyTorch CUDA allocator's allocated, reserved, and
+  peak memory for each range. It synchronizes CUDA at stage boundaries and is
+  intended for diagnosis rather than production throughput measurements.
+
+```bash
+nsys profile --trace=cuda,nvtx --cuda-memory-usage=true \
+    -o foldmatch-profile \
+    inference complete-embedding <other-options> --nvtx --profile-memory
+```
+
+Memory log entries include the input-resident baseline and the additional peak
+within each stage. When profiling is requested without a CUDA device, Foldmatch
+warns and continues without CUDA profiling.
+
 ---
 
 ## Python API
