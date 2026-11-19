@@ -212,6 +212,26 @@ fm-search build embeddings --embedding-folder out/seq-chain --output-db db/chain
 
 Run `fm-embedding [from-structures|from-sequences] [command] --help` for full options (batch size, accelerator, devices, output format, distributed settings, etc.).
 
+#### CUDA profiling
+
+Every `fm-embedding from-structures` and `from-sequences` command accepts two opt-in switches:
+
+- `--nvtx` adds NVTX ranges, visible in NVIDIA Nsight Systems, around ESM3's `esm.encode` and
+  `esm.forward_and_sample` for each chain, and around each `chain.aggregator` or `assembly.aggregator`
+  batch (labelled with its padded tensor shape).
+- `--profile-memory` logs the PyTorch CUDA allocator's allocated, reserved and peak memory for each of
+  those ranges (`[cuda-memory]` log lines, with the stage's baseline and the additional peak within it).
+  It synchronizes CUDA at stage boundaries, so use it for diagnosis, not throughput measurements.
+
+```bash
+nsys profile --trace=cuda,nvtx --cuda-memory-usage=true -o foldmatch-profile \
+    fm-embedding from-structures assembly --src-folder data/pdb --output-folder out/assembly \
+    --accelerator gpu --devices 1 --nvtx --profile-memory
+```
+
+Without a CUDA device both switches are no-ops (with a warning). The legacy `inference` residue, chain,
+assembly and complete-embedding commands take the same switches.
+
 ### `fm-search` — build and query FAISS databases
 
 ```bash
@@ -328,31 +348,6 @@ Supported `--format-output` fields:
 - Tuning: `--gap-open` (default `11`) and `--gap-extend` (default `1`), where a gap of length L costs gap-open + (L − 1) × gap-extend, and `--align-workers` (defaults to all CPUs on the node). `--gap-open` must be at least 1 and `--gap-extend` at least 0, both at most 1,048,576; the sign is ignored. With `--significance-mode default`, a run that needs significance (an `evalue` or `bits` column, or a finite `--max-evalue`, which the default `1e-3` is) needs the gap costs 11/1: for other gap costs use `--significance-mode sampled`, or `--max-evalue inf` with neither column in `--format-output`. Both rules are checked before the queries are embedded (`query sequences`) or the database is searched (`query db`).
 - Compositional bias correction: off by default, so alignments are scored with plain BLOSUM62. `--comp-bias-corr` (scaled by `--comp-bias-corr-scale`, default `1`) applies mmseqs's correction for locally biased amino-acid composition, which mmseqs enables by default; use it when comparing with `mmseqs search`. With the same setting on both tools, raw scores, bit scores and E-values match `mmseqs search` (18-8cc5c) on the same pairs, except for alignments containing a non-standard residue (`X`, `B`, `Z`, `J`, `U`, `O`, `*`), which the two tools score differently. The correction can shorten alignments over biased regions, so coordinates, identity and coverage change too.
 - `evalue`/`bits` use calibrated Karlin–Altschul statistics by default (`--significance-mode default`). `--significance-mode sampled` estimates λ/K by sampling for other gap penalties, but its absolute magnitudes are relative-only. The significance pass is skipped automatically when neither `evalue` nor `bits` is in `--format-output`.
-
-### `inference` — low-level inference subcommands
-
-Lower-level entry point exposing individual inference passes (`residue-embedding`, `structure-embedding`, `chain-embedding`, `assembly-embedding`, `complete-embedding`). Mostly useful for advanced workflows that compose inference stages explicitly. Run `inference --help` for the command list.
-
-#### CUDA memory profiling
-
-The residue, chain, assembly, and complete inference commands accept two opt-in
-profiling switches:
-
-- `--nvtx` adds ranges for ESM encode/forward and aggregator batches so they are
-  visible in NVIDIA Nsight Systems.
-- `--profile-memory` logs the PyTorch CUDA allocator's allocated, reserved, and
-  peak memory for each range. It synchronizes CUDA at stage boundaries and is
-  intended for diagnosis rather than production throughput measurements.
-
-```bash
-nsys profile --trace=cuda,nvtx --cuda-memory-usage=true \
-    -o foldmatch-profile \
-    inference complete-embedding <other-options> --nvtx --profile-memory
-```
-
-Memory log entries include the input-resident baseline and the additional peak
-within each stage. When profiling is requested without a CUDA device, Foldmatch
-warns and continues without CUDA profiling.
 
 ---
 

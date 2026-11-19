@@ -58,6 +58,16 @@ _OUTPUT_CODES_NAME_HELP = (
     "<name>-<rank>.parquet or <name>-<rank>.json.gz (default <output-name>-codes)."
 )
 
+NvtxOption = Annotated[bool, typer.Option(
+    "--nvtx",
+    help='Add NVTX ranges around ESM3 encode/forward and aggregator stages for Nsight Systems profiling.'
+)]
+ProfileMemoryOption = Annotated[bool, typer.Option(
+    "--profile-memory",
+    help='Log synchronized per-stage PyTorch CUDA allocator peaks. Changes timing; for diagnosis only.'
+)]
+
+
 app = typer.Typer(
     add_completion=False,
     pretty_exceptions_enable=False,
@@ -133,6 +143,8 @@ def from_structures_residue(
         strategy: Annotated[Strategy, typer.Option(
             help='Lightning strategy to control distribution of inference.'
         )] = Strategy.auto,
+        nvtx: NvtxOption = False,
+        profile_memory: ProfileMemoryOption = False,
         log_level: Annotated[LogLevel, typer.Option(
             help='Logging level.'
         )] = LogLevel.info
@@ -158,6 +170,8 @@ def from_structures_residue(
         out_folder=output_folder,
         strategy=strategy,
         return_predictions=False,
+        nvtx=nvtx,
+        profile_memory=profile_memory,
     )
 
 
@@ -213,6 +227,8 @@ def from_structures_chain(
         strategy: Annotated[Strategy, typer.Option(
             help='Lightning strategy to control distribution of inference.'
         )] = Strategy.auto,
+        nvtx: NvtxOption = False,
+        profile_memory: ProfileMemoryOption = False,
         log_level: Annotated[LogLevel, typer.Option(
             help='Logging level.'
         )] = LogLevel.info
@@ -238,6 +254,8 @@ def from_structures_chain(
         out_name=output_name,
         strategy=strategy,
         return_predictions=False,
+        nvtx=nvtx,
+        profile_memory=profile_memory,
     )
 
 
@@ -296,6 +314,8 @@ def from_structures_assembly(
         strategy: Annotated[Strategy, typer.Option(
             help='Lightning strategy to control distribution of inference.'
         )] = Strategy.auto,
+        nvtx: NvtxOption = False,
+        profile_memory: ProfileMemoryOption = False,
         log_level: Annotated[LogLevel, typer.Option(
             help='Logging level.'
         )] = LogLevel.info
@@ -321,6 +341,8 @@ def from_structures_assembly(
         out_name=output_name,
         strategy=strategy,
         return_predictions=False,
+        nvtx=nvtx,
+        profile_memory=profile_memory,
     )
 
 
@@ -384,6 +406,8 @@ def from_sequences_residue(
         strategy: Annotated[Strategy, typer.Option(
             help='Lightning strategy to control distribution of inference.'
         )] = Strategy.auto,
+        nvtx: NvtxOption = False,
+        profile_memory: ProfileMemoryOption = False,
         log_level: Annotated[LogLevel, typer.Option(
             help='Logging level.'
         )] = LogLevel.info
@@ -407,6 +431,8 @@ def from_sequences_residue(
             out_folder=output_folder,
             strategy=strategy,
             return_predictions=False,
+            nvtx=nvtx,
+            profile_memory=profile_memory,
             **_codes_keywords(codes),
         )
 
@@ -467,6 +493,8 @@ def from_sequences_chain(
         strategy: Annotated[Strategy, typer.Option(
             help='Lightning strategy to control distribution of inference.'
         )] = Strategy.auto,
+        nvtx: NvtxOption = False,
+        profile_memory: ProfileMemoryOption = False,
         log_level: Annotated[LogLevel, typer.Option(
             help='Logging level.'
         )] = LogLevel.info
@@ -492,6 +520,8 @@ def from_sequences_chain(
             out_name=output_name,
             strategy=strategy,
             return_predictions=False,
+            nvtx=nvtx,
+            profile_memory=profile_memory,
             **_codes_keywords(codes),
         )
 

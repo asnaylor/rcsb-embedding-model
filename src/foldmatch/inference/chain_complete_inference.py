@@ -52,6 +52,8 @@ def predict(
         scoring_system=None,
         out_codes_folder: Optional[Path] = None,
         out_codes_name: Optional[str] = None,
+        nvtx: bool = False,
+        profile_memory: bool = False,
 ):
     """Chain embeddings of structures or FASTA sequences (ESM3 + the residue aggregator).
 
@@ -173,6 +175,8 @@ def predict(
         collate_fn=identity_collate
     )
 
+    # Only when asked for, so callers without them construct the module as before.
+    profiling = dict(nvtx=nvtx, profile_memory=profile_memory) if (nvtx or profile_memory) else {}
     logger.info(f"Loading rcsb-esm + rcsb-aggregator module")
     res_model = get_residue_model(
         device=torch.device("cpu")
@@ -187,16 +191,19 @@ def predict(
             residue_head=codes.head,
             residue_output=RESIDUE_CODES,
             code_files=True,
+            **profiling,
         )
     else:
         module = ChainCompleteModule(
             res_model=res_model,
-            aggregator_model=aggregator_model
+            aggregator_model=aggregator_model,
+            **profiling,
         ) if residue_output is None else ChainCompleteModule(
             res_model=res_model,
             aggregator_model=aggregator_model,
             residue_head=residue_head,
             residue_output=residue_output,
+            **profiling,
         )
     logger.info(f"rcsb-esm + rcsb-aggregator module ready")
 

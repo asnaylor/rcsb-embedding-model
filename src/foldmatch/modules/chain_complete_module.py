@@ -6,6 +6,7 @@ from foldmatch.modules.residue_payloads import ResiduePayloads
 from foldmatch.utils.data import collate_seq_embeddings
 from foldmatch.utils.esm.loaders import per_residue_embedding
 from foldmatch.utils.model import release_mps_cache
+from foldmatch.utils.profiling import cuda_profile_stage, esm_profile_kwargs, shape_label
 
 logger = logging.getLogger(__name__)
 
@@ -34,24 +35,41 @@ class ChainCompleteModule(ResiduePayloads, LightningModule):
             residue_head=None,
             residue_output=None,
             code_files=False,
+            nvtx: bool = False,
+            profile_memory: bool = False,
     ):
         super().__init__()
         self.esm3 = res_model
         self.aggregator =  aggregator_model
         self._init_residue_payloads(residue_head, residue_output, code_files)
+        self.nvtx = nvtx
+        self.profile_memory = profile_memory
 
     def on_predict_start(self):
         logger.info(f"ESM + Aggregator device: {self.device} | {self.trainer.global_rank + 1}/{self.trainer.world_size}")
+        if (self.nvtx or self.profile_memory) and self.device.type != "cuda":
+            logger.warning("CUDA profiling requested, but the ESM + aggregator module is not running on CUDA")
 
     def predict_step(self, prot_batch, batch_idx):
         prot_embeddings = []
         prot_names = []
-        for esm_prot, name in prot_batch:
-            embeddings = per_residue_embedding(self.esm3, esm_prot)
+        for sample_idx, (esm_prot, name) in enumerate(prot_batch):
+            embeddings = per_residue_embedding(self.esm3, esm_prot, **esm_profile_kwargs(
+                nvtx=self.nvtx,
+                profile_memory=self.profile_memory,
+                label=f"batch={batch_idx} sample={sample_idx} id={name}",
+                logger=logger,
+            ))
             prot_embeddings.append(embeddings)
             prot_names.append(name)
         res_batch_embedding, res_batch_mask = collate_seq_embeddings(prot_embeddings)
-        chain_embeddings = self.aggregator(res_batch_embedding, res_batch_mask)
+        with cuda_profile_stage(
+                f"chain.aggregator batch={batch_idx} shape={shape_label(res_batch_embedding)}",
+                nvtx=self.nvtx,
+                memory=self.profile_memory,
+                logger=logger,
+        ):
+            chain_embeddings = self.aggregator(res_batch_embedding, res_batch_mask)
         if self.residue_output is None:
             release_mps_cache(self.device)
             return chain_embeddings, tuple(prot_names)

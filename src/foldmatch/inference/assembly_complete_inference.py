@@ -35,6 +35,8 @@ def predict(
         out_name: str = 'inference',
         out_folder: Path = None,
         return_predictions: bool = True,
+        nvtx: bool = False,
+        profile_memory: bool = False,
 ):
     logger = logging.getLogger(__name__)
 
@@ -60,6 +62,8 @@ def predict(
         collate_fn=identity_collate
     )
 
+    # Only when asked for, so callers without them construct the module as before.
+    profiling = dict(nvtx=nvtx, profile_memory=profile_memory) if (nvtx or profile_memory) else {}
     logger.info("Loading rcsb-esm + rcsb-aggregator module")
     res_model = get_residue_model(
         device=torch.device("cpu")
@@ -70,7 +74,8 @@ def predict(
     module = AssemblyCompleteModule(
         res_model=res_model,
         aggregator_model=aggregator_model,
-        max_res_n=max_res_n
+        max_res_n=max_res_n,
+        **profiling,
     )
     logger.info("rcsb-esm + rcsb-aggregator module ready")
 

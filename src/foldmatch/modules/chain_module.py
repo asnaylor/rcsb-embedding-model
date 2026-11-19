@@ -2,7 +2,7 @@ import logging
 
 from lightning import LightningModule
 
-from foldmatch.utils.profiling import cuda_profile_stage
+from foldmatch.utils.profiling import cuda_profile_stage, shape_label
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +31,7 @@ class ChainModule(LightningModule):
 
     def predict_step(self, batch, batch_idx):
         (x, x_mask), dom_id = batch
-        shape = "x".join(str(size) for size in x.shape)
-        label = f"{self.profile_stage}.aggregator batch={batch_idx} shape={shape}"
+        label = f"{self.profile_stage}.aggregator batch={batch_idx} shape={shape_label(x)}"
         with cuda_profile_stage(
                 label,
                 nvtx=self.nvtx,

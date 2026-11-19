@@ -34,6 +34,8 @@ def predict(
         out_codes_folder: Optional[Path] = None,
         out_codes_name: Optional[str] = None,
         scoring_system=None,
+        nvtx: bool = False,
+        profile_memory: bool = False,
 ):
     """Residue embeddings of FASTA sequences (ESM3): one ``[L + 2, 1536]`` table per sequence, BOS and EOS included.
     Each prediction (``return_predictions``) is ``(embeddings, ids)``.
@@ -96,17 +98,21 @@ def predict(
         collate_fn=identity_collate
     )
 
+    # Only when asked for, so callers without them construct the module as before.
+    profiling = dict(nvtx=nvtx, profile_memory=profile_memory) if (nvtx or profile_memory) else {}
     logger.info(f"Loading rcsb-esm module")
     esm_model = get_residue_model(
         device=torch.device("cpu")
     )
     module = EsmModule(
-        model=esm_model
+        model=esm_model,
+        **profiling,
     ) if codes is None else EsmModule(
         model=esm_model,
         residue_head=codes.head,
         residue_output=RESIDUE_CODES,
         code_files=True,
+        **profiling,
     )
     logger.info(f"rcsb-esm module ready")
 

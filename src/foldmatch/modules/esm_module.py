@@ -5,6 +5,7 @@ from lightning import LightningModule
 from foldmatch.modules.residue_payloads import ResiduePayloads
 from foldmatch.utils.esm.loaders import per_residue_embedding
 from foldmatch.utils.model import release_mps_cache
+from foldmatch.utils.profiling import esm_profile_kwargs
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +55,9 @@ class EsmModule(ResiduePayloads, LightningModule):
         return embeddings, names, payloads, digests
 
     def __compute_embeddings(self, esm_prot, name, batch_idx, sample_idx):
-        return per_residue_embedding(
-            self.esm3,
-            esm_prot,
+        return per_residue_embedding(self.esm3, esm_prot, **esm_profile_kwargs(
             nvtx=self.nvtx,
             profile_memory=self.profile_memory,
-            profile_label=f"batch={batch_idx} sample={sample_idx} id={name}",
+            label=f"batch={batch_idx} sample={sample_idx} id={name}",
             logger=logger,
-        )
+        ))

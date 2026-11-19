@@ -9,6 +9,21 @@ def _gib(value: int) -> float:
     return value / (1024 ** 3)
 
 
+def esm_profile_kwargs(*, nvtx: bool, profile_memory: bool, label: str, logger: logging.Logger) -> dict:
+    """Profiling keywords for :func:`foldmatch.utils.esm.loaders.per_residue_embedding`, empty when profiling is off.
+
+    The unprofiled call stays ``per_residue_embedding(model, protein)``, as callers and test doubles expect.
+    """
+    if not (nvtx or profile_memory):
+        return {}
+    return dict(nvtx=nvtx, profile_memory=profile_memory, profile_label=label, logger=logger)
+
+
+def shape_label(tensor) -> str:
+    """Tensor shape as ``AxBxC``, for profiling range names."""
+    return "x".join(str(size) for size in tensor.shape)
+
+
 @contextmanager
 def cuda_profile_stage(
         name: str,
